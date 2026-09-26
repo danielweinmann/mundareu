@@ -11,3 +11,9 @@ English. The game itself ships in pt-BR.
 This project runs on the Seasoned workflow: [seasoned-skills](https://github.com/seasonedcc/seasoned-skills)
 generates the standing instructions and skills Claude Code reads. After cloning,
 `pnpm install` runs the sync that regenerates them.
+
+## License
+
+The source code is licensed under the MIT license (see `LICENSE`). The game's
+assets are all rights reserved (see `assets/LICENSE`). The name "Mundaréu", the
+logo, and the visual identity are trademarks (see `TRADEMARKS.md`).
