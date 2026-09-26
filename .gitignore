@@ -5,6 +5,8 @@ coverage/
 .env
 .env.*
 !.env.example
+target/
+/apps/ios/build/
 # >>> seasoned-skills (managed block, do not edit) >>>
 /demo-videos/*/*.mp4
 .claude/hooks/block-git-stash.sh
