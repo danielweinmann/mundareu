@@ -7,6 +7,8 @@ coverage/
 !.env.example
 target/
 /apps/ios/build/
+/apps/ios/*.xcodeproj
+/apps/ios/Signing.xcconfig
 # >>> seasoned-skills (managed block, do not edit) >>>
 /demo-videos/*/*.mp4
 .claude/hooks/block-git-stash.sh
