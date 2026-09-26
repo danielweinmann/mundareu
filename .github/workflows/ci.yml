@@ -7,7 +7,7 @@ on:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -24,7 +24,6 @@ jobs:
       - uses: dtolnay/rust-toolchain@master
         with:
           toolchain: 1.98.1
-          targets: aarch64-apple-ios,aarch64-apple-ios-sim
           components: rustfmt,clippy
       - uses: Swatinem/rust-cache@v2
       - run: cargo fmt --all --check
@@ -41,6 +40,8 @@ jobs:
 
   ios:
     runs-on: macos-latest
+    env:
+      CARGO_TARGET_DIR: target/ios
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@master
