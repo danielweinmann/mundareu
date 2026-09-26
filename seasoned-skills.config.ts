@@ -9,9 +9,16 @@ export default defineConfig({
   outOfScopeFindings: 'bank',
   release: { target: 'deployed-product' },
   gates: {
-    lint: 'pnpm check',
-    typecheck: 'pnpm tsc',
-    full: ['pnpm check', 'pnpm tsc'],
+    lint: 'cargo fmt --all --check',
+    typecheck: 'cargo clippy --workspace --all-targets -- -D warnings',
+    full: [
+      'cargo fmt --all --check',
+      'cargo clippy --workspace --all-targets -- -D warnings',
+      'cargo test --workspace',
+      'cargo build --target aarch64-apple-ios -p mundareu',
+      'pnpm check',
+      'pnpm tsc',
+    ],
   },
   calibrationFile: 'workflow-content/calibrations.md',
   // The resource table isolated worktree lanes are provisioned from. Uncomment
