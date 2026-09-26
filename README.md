@@ -79,6 +79,26 @@ to `Signing.xcconfig` (the copy is gitignored) and replace the placeholder with
 your team id, found in Xcode → Settings → Accounts. Then open
 `Mundareu.xcodeproj`, pick the iPad as the run destination and press Run.
 
+The same build runs from the command line. An iPad has two identifiers and the
+tools disagree on which one they want: `xcodebuild` takes the hardware
+identifier that `xcrun xctrace list devices` prints, and `devicectl` takes the
+CoreDevice identifier that `xcrun devicectl list devices` prints. With the iPad
+connected, paired, and Developer Mode enabled on it (Settings → Privacy &
+Security; it cannot be enabled from the Mac when the iPad has a passcode):
+
+```sh
+xcodebuild -project apps/ios/Mundareu.xcodeproj -scheme Mundareu \
+  -configuration Release -destination 'id=<hardware identifier>' \
+  -derivedDataPath apps/ios/build -allowProvisioningUpdates build
+xcrun devicectl device install app --device <CoreDevice identifier> \
+  apps/ios/build/Build/Products/Release-iphoneos/Mundareu.app
+xcrun devicectl device process launch --device <CoreDevice identifier> \
+  com.danielweinmann.mundareu
+```
+
+The first launch on a given iPad is refused until the developer profile is
+trusted on the device (Settings → General → VPN & Device Management).
+
 The simulator needs no team. Build for it from the command line with:
 
 ```sh
