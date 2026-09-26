@@ -54,12 +54,10 @@ cargo run -p mundareu -- --screenshot proof.png --exit-after-seconds 4 --log-fra
 - `--exit-after-seconds <n>`: quit cleanly after `n` seconds.
 - `--log-frame-rate`: log the smoothed frame rate every two seconds.
 
-The gates are `cargo fmt --all --check`,
-`cargo clippy --workspace --all-targets -- -D warnings`,
-`cargo test --workspace`, `cargo build --target aarch64-apple-ios -p mundareu`,
-`pnpm check` and `pnpm tsc`. Continuous integration runs the formatting,
-clippy, tests, Biome (`pnpm check`) and `pnpm tsc` on Ubuntu, and the iOS
-device compile plus the simulator Xcode build on macOS.
+The gates are the `full` list in `seasoned-skills.config.ts`, and they are the
+same commands continuous integration runs: the formatting, clippy, tests, Biome
+(`pnpm check`) and `pnpm tsc` on Ubuntu, and the iOS device compile plus the
+simulator Xcode build on macOS.
 
 ## Running on an iPad
 

@@ -18,6 +18,7 @@ export default defineConfig({
       'cargo build --target aarch64-apple-ios -p mundareu',
       'pnpm check',
       'pnpm tsc',
+      "cd apps/ios && xcodegen generate && xcodebuild -project Mundareu.xcodeproj -scheme Mundareu -configuration Debug -destination 'generic/platform=iOS Simulator' -derivedDataPath build CODE_SIGNING_ALLOWED=NO build",
     ],
   },
   calibrationFile: 'workflow-content/calibrations.md',
