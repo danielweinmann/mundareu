@@ -12,6 +12,53 @@ This project runs on the Seasoned workflow: [seasoned-skills](https://github.com
 generates the standing instructions and skills Claude Code reads. After cloning,
 `pnpm install` runs the sync that regenerates them.
 
+## Repository layout
+
+The game is a Cargo workspace with three crates:
+
+- `crates/world` (`mundareu_world`): the pure domain. Blocks, chunks, the
+  world map, terrain generation, chunk meshing, the avatar's kinematic body,
+  block raycasting and the save format. It never depends on Bevy, so
+  everything in it is plain Rust with plain unit tests.
+- `crates/game` (`mundareu_game`): the Bevy application as a library. Its
+  plugins are thin systems that wire the pure domain to rendering, input, the
+  HUD and persistence. Every string the player sees lives in its `locale`
+  module, in Brazilian Portuguese.
+- `apps/mundareu`: the binary. It parses a few flags and calls
+  `mundareu_game::run_with`. The same binary is what the iOS wrapper builds.
+
+The rule that keeps this honest: logic goes in `crates/world`, Bevy stays in
+`crates/game`.
+
+## Running on a Mac
+
+Install the Rust toolchain through `rustup` (the pinned version lives in
+`rust-toolchain.toml`) and run:
+
+```sh
+cargo run -p mundareu
+```
+
+Move with WASD, hold the right mouse button and drag to look around, press
+space to jump, left-click to break a block, right-click to place one, and
+press 1 to 6 to pick a block. Touch controls are always active too.
+
+Three flags exist so automated runs can prove the app renders:
+
+```sh
+cargo run -p mundareu -- --screenshot proof.png --exit-after-seconds 4 --log-frame-rate
+```
+
+- `--screenshot <path>`: write a PNG of the window about two seconds after
+  startup.
+- `--exit-after-seconds <n>`: quit cleanly after `n` seconds.
+- `--log-frame-rate`: log the smoothed frame rate every two seconds.
+
+The gates are `cargo fmt --all --check`,
+`cargo clippy --workspace --all-targets -- -D warnings`,
+`cargo test --workspace`, `cargo build -p mundareu` and
+`cargo build --target aarch64-apple-ios -p mundareu`.
+
 ## License
 
 The source code is licensed under the MIT license (see `LICENSE`). The game's
