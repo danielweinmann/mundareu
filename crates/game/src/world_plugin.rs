@@ -176,7 +176,17 @@ fn render_mesh(chunk_mesh: ChunkMesh) -> Mesh {
     )
     .with_inserted_attribute(
         Mesh::ATTRIBUTE_COLOR,
-        VertexAttributeValues::Float32x4(chunk_mesh.colors),
+        VertexAttributeValues::Float32x4(
+            chunk_mesh
+                .colors
+                .into_iter()
+                .map(|[red, green, blue, alpha]| {
+                    Color::srgba(red, green, blue, alpha)
+                        .to_linear()
+                        .to_f32_array()
+                })
+                .collect(),
+        ),
     )
     .with_inserted_indices(Indices::U32(chunk_mesh.indices))
 }
@@ -205,7 +215,31 @@ fn chunks_touched_by(block_position: BlockPosition) -> impl Iterator<Item = Chun
 
 #[cfg(test)]
 mod tests {
+    use mundareu_world::Block;
+
     use super::*;
+
+    #[test]
+    fn the_render_mesh_carries_the_palette_colors_in_linear_space() {
+        let mut terrain = mundareu_world::World::default();
+        terrain.set_block(BlockPosition::new(1, 1, 1), Block::Grass);
+        let chunk_mesh = mesh_chunk(&terrain, ChunkPosition::new(0, 0, 0));
+        let expected_colors: Vec<[f32; 4]> = chunk_mesh
+            .colors
+            .iter()
+            .map(|[red, green, blue, alpha]| {
+                Color::srgba(*red, *green, *blue, *alpha)
+                    .to_linear()
+                    .to_f32_array()
+            })
+            .collect();
+        let mesh = render_mesh(chunk_mesh);
+        let Some(VertexAttributeValues::Float32x4(colors)) = mesh.attribute(Mesh::ATTRIBUTE_COLOR)
+        else {
+            panic!("the render mesh has no vertex colors");
+        };
+        assert_eq!(colors, &expected_colors);
+    }
 
     #[test]
     fn a_block_inside_a_chunk_only_touches_that_chunk() {
