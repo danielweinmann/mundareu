@@ -1,3 +1,4 @@
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use bevy::ecs::system::SystemParam;
@@ -79,11 +80,13 @@ pub fn load_or_generate() -> SavedGame {
             return fresh_game();
         }
         Err(error) => {
-            warn!(
-                "could not read {}: {error}; generating a fresh world",
-                path.display()
+            return set_aside_and_generate(
+                &path,
+                format!(
+                    "could not read the saved world at {}: {error}",
+                    path.display()
+                ),
             );
-            return fresh_game();
         }
     };
     match decode(&bytes) {
@@ -94,14 +97,29 @@ pub fn load_or_generate() -> SavedGame {
                 player: Some(player),
             }
         }
-        Err(error) => {
-            warn!(
-                "ignoring the saved world at {}: {error}; generating a fresh one",
+        Err(error) => set_aside_and_generate(
+            &path,
+            format!(
+                "could not decode the saved world at {}: {error}",
                 path.display()
-            );
-            fresh_game()
-        }
+            ),
+        ),
     }
+}
+
+fn set_aside_and_generate(path: &Path, problem: String) -> SavedGame {
+    let unreadable_path = unreadable_save_path(path);
+    match std::fs::rename(path, &unreadable_path) {
+        Ok(()) => warn!(
+            "{problem}; moved it to {} and generating a fresh world",
+            unreadable_path.display()
+        ),
+        Err(error) => warn!(
+            "{problem}; could not move it to {}: {error}; generating a fresh world that will replace it on the next save",
+            unreadable_path.display()
+        ),
+    }
+    fresh_game()
 }
 
 fn fresh_game() -> SavedGame {
@@ -166,5 +184,44 @@ fn write_bytes(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent)?;
     }
-    std::fs::write(path, bytes)
+    let partial_path = partial_save_path(path);
+    let mut partial_file = std::fs::File::create(&partial_path)?;
+    partial_file.write_all(bytes)?;
+    partial_file.sync_all()?;
+    std::fs::rename(&partial_path, path)
+}
+
+fn partial_save_path(path: &Path) -> PathBuf {
+    path_with_suffix(path, ".partial")
+}
+
+fn unreadable_save_path(path: &Path) -> PathBuf {
+    path_with_suffix(path, ".unreadable")
+}
+
+fn path_with_suffix(path: &Path, suffix: &str) -> PathBuf {
+    let mut path_with_suffix = path.as_os_str().to_owned();
+    path_with_suffix.push(suffix);
+    PathBuf::from(path_with_suffix)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn a_save_is_written_beside_the_world_file_before_replacing_it() {
+        assert_eq!(
+            partial_save_path(Path::new("/saves/world.mundareu")),
+            PathBuf::from("/saves/world.mundareu.partial")
+        );
+    }
+
+    #[test]
+    fn an_unreadable_world_is_kept_beside_the_world_file() {
+        assert_eq!(
+            unreadable_save_path(Path::new("/saves/world.mundareu")),
+            PathBuf::from("/saves/world.mundareu.unreadable")
+        );
+    }
 }
