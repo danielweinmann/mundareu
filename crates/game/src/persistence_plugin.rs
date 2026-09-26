@@ -152,11 +152,11 @@ fn save_on_suspend_or_exit(
     mut autosave: ResMut<Autosave>,
     target: SaveTarget,
 ) {
-    let suspending = lifecycle_messages
+    let suspended = lifecycle_messages
         .read()
-        .any(|lifecycle| *lifecycle == AppLifecycle::WillSuspend);
+        .any(|lifecycle| *lifecycle == AppLifecycle::Suspended);
     let leaving = close_requests.read().next().is_some() || exits.read().next().is_some();
-    if suspending || leaving {
+    if suspended || leaving {
         target.write();
         autosave.dirty = false;
     }
