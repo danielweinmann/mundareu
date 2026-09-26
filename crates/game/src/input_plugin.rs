@@ -32,10 +32,16 @@ pub struct Joystick {
     pub anchor: Vec2,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+struct LookFinger {
+    touch_id: u64,
+    last_position: Vec2,
+}
+
 #[derive(Resource, Clone, Copy, Debug, Default, PartialEq)]
 pub struct TouchState {
     pub joystick: Option<Joystick>,
-    look_touch_id: Option<u64>,
+    look_finger: Option<LookFinger>,
 }
 
 #[derive(Resource, Clone, Copy, Debug, Default, PartialEq)]
@@ -82,8 +88,11 @@ fn read_touch_input(
                     anchor: touch.position(),
                 });
             }
-        } else if touch_state.look_touch_id.is_none() {
-            touch_state.look_touch_id = Some(touch.id());
+        } else if touch_state.look_finger.is_none() {
+            touch_state.look_finger = Some(LookFinger {
+                touch_id: touch.id(),
+                last_position: touch.position(),
+            });
         }
     }
     intent.movement = Vec2::ZERO;
@@ -93,10 +102,14 @@ fn read_touch_input(
             None => touch_state.joystick = None,
         }
     }
-    if let Some(touch_id) = touch_state.look_touch_id {
-        match touches.get_pressed(touch_id) {
-            Some(touch) => intent.look += touch.delta() * TOUCH_LOOK_RADIANS_PER_PIXEL,
-            None => touch_state.look_touch_id = None,
+    if let Some(look_finger) = &mut touch_state.look_finger {
+        match touches.get_pressed(look_finger.touch_id) {
+            Some(touch) => {
+                intent.look +=
+                    (touch.position() - look_finger.last_position) * TOUCH_LOOK_RADIANS_PER_PIXEL;
+                look_finger.last_position = touch.position();
+            }
+            None => touch_state.look_finger = None,
         }
     }
 }
@@ -197,7 +210,50 @@ pub fn joystick_movement(anchor: Vec2, position: Vec2) -> Vec2 {
 
 #[cfg(test)]
 mod tests {
+    use bevy::input::InputPlugin;
+    use bevy::input::touch::TouchPhase;
+
     use super::*;
+
+    fn touch_input(phase: TouchPhase, position: Vec2, window: Entity) -> TouchInput {
+        TouchInput {
+            phase,
+            position,
+            window,
+            force: None,
+            id: 7,
+        }
+    }
+
+    #[test]
+    fn a_look_finger_resting_still_stops_turning_the_camera() {
+        let mut app = App::new();
+        app.add_plugins((InputPlugin, plugin));
+        let window = app
+            .world_mut()
+            .spawn((Window::default(), PrimaryWindow))
+            .id();
+        app.world_mut().write_message(touch_input(
+            TouchPhase::Started,
+            Vec2::new(1000.0, 300.0),
+            window,
+        ));
+        app.update();
+        app.world_mut().write_message(touch_input(
+            TouchPhase::Moved,
+            Vec2::new(1040.0, 300.0),
+            window,
+        ));
+        app.update();
+        let look_after_dragging = app.world().resource::<PlayerIntent>().look;
+        app.update();
+        app.update();
+        assert!(look_after_dragging.x > 0.0);
+        assert_eq!(
+            app.world().resource::<PlayerIntent>().look,
+            look_after_dragging
+        );
+    }
 
     #[test]
     fn dragging_the_joystick_up_the_screen_moves_forward() {
