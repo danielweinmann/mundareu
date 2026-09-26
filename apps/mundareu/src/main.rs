@@ -13,7 +13,10 @@ fn parse_arguments(arguments: impl IntoIterator<Item = String>) -> RunOptions {
         match argument.as_str() {
             "--screenshot" => options.screenshot_path = arguments.next().map(PathBuf::from),
             "--exit-after-seconds" => {
-                options.exit_after_seconds = arguments.next().and_then(|value| value.parse().ok());
+                options.exit_after_seconds = arguments
+                    .next()
+                    .and_then(|value| value.parse::<f32>().ok())
+                    .filter(|seconds| seconds.is_finite() && *seconds > 0.0);
             }
             "--log-frame-rate" => options.log_frame_rate = true,
             unknown => eprintln!("ignoring unknown argument {unknown}"),
@@ -55,8 +58,12 @@ mod tests {
     }
 
     #[test]
-    fn unknown_arguments_and_unparsable_numbers_are_ignored() {
+    fn unknown_arguments_and_unusable_numbers_are_ignored() {
         let options = parse(&["--mystery", "--exit-after-seconds", "soon"]);
         assert_eq!(options, RunOptions::default());
+        for value in ["-1", "0", "NaN", "inf"] {
+            let options = parse(&["--exit-after-seconds", value]);
+            assert_eq!(options.exit_after_seconds, None, "accepted {value}");
+        }
     }
 }
