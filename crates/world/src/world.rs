@@ -40,6 +40,17 @@ impl World {
     pub fn is_solid_at(&self, block_position: BlockPosition) -> bool {
         self.block_at(block_position).is_solid()
     }
+
+    pub fn highest_solid_y(&self, x: i32, z: i32, search_from_y: i32) -> Option<i32> {
+        let lowest_loaded_y = self
+            .chunks
+            .keys()
+            .map(|chunk_position| chunk_position.min_block().0.y)
+            .min()?;
+        (lowest_loaded_y..=search_from_y)
+            .rev()
+            .find(|y| self.is_solid_at(BlockPosition::new(x, *y, z)))
+    }
 }
 
 #[cfg(test)]
@@ -72,6 +83,18 @@ mod tests {
         assert_eq!(world.block_at(BlockPosition::new(15, 0, 0)), Block::Grass);
         assert_eq!(world.block_at(BlockPosition::new(16, 0, 0)), Block::Dirt);
         assert_eq!(world.chunk_positions().count(), 2);
+    }
+
+    #[test]
+    fn the_highest_solid_block_in_a_column_is_found_below_the_search_start() {
+        let mut world = World::default();
+        world.set_block(BlockPosition::new(4, 2, 4), Block::Stone);
+        world.set_block(BlockPosition::new(4, 9, 4), Block::Grass);
+        world.set_block(BlockPosition::new(4, 30, 4), Block::Leaves);
+        assert_eq!(world.highest_solid_y(4, 4, 20), Some(9));
+        assert_eq!(world.highest_solid_y(4, 4, 40), Some(30));
+        assert_eq!(world.highest_solid_y(5, 4, 40), None);
+        assert_eq!(World::default().highest_solid_y(0, 0, 40), None);
     }
 
     #[test]
