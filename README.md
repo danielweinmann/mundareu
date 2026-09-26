@@ -57,7 +57,38 @@ cargo run -p mundareu -- --screenshot proof.png --exit-after-seconds 4 --log-fra
 The gates are `cargo fmt --all --check`,
 `cargo clippy --workspace --all-targets -- -D warnings`,
 `cargo test --workspace`, `cargo build -p mundareu` and
-`cargo build --target aarch64-apple-ios -p mundareu`.
+`cargo build --target aarch64-apple-ios -p mundareu`. Continuous integration
+runs the cargo gates on Ubuntu and the iOS simulator build on macOS.
+
+## Running on an iPad
+
+The iOS app lives in `apps/ios` as an Xcode project that
+[xcodegen](https://github.com/yonaskolb/XcodeGen) generates from
+`project.yml`. It has no Swift sources: a run-script phase builds the
+`mundareu` binary with cargo for the chosen destination and copies it into the
+app bundle as its executable.
+
+```sh
+brew install xcodegen
+cd apps/ios && xcodegen generate
+```
+
+A real iPad needs your Apple development team. Copy `Signing.example.xcconfig`
+to `Signing.xcconfig` (the copy is gitignored) and replace the placeholder with
+your team id, found in Xcode → Settings → Accounts. Then open
+`Mundareu.xcodeproj`, pick the iPad as the run destination and press Run.
+
+The simulator needs no team. Build for it from the command line with:
+
+```sh
+xcodebuild -project apps/ios/Mundareu.xcodeproj -scheme Mundareu \
+  -configuration Debug -destination 'generic/platform=iOS Simulator' \
+  -derivedDataPath apps/ios/build CODE_SIGNING_ALLOWED=NO build
+```
+
+and install the resulting `Mundareu.app` on a booted simulator with
+`xcrun simctl install booted <path>`, then launch it with
+`xcrun simctl launch booted com.danielweinmann.mundareu`.
 
 ## License
 
