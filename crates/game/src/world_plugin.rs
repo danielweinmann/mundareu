@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use bevy::asset::RenderAssetUsages;
-use bevy::mesh::{Indices, PrimitiveTopology, VertexAttributeValues};
+use bevy::mesh::{Indices, PrimitiveTopology};
 use bevy::prelude::*;
 use mundareu_world::{BlockPosition, CHUNK_SIZE, ChunkMesh, ChunkPosition, mesh_chunk};
 
@@ -162,32 +162,22 @@ fn spawn_chunk_view(
 }
 
 fn render_mesh(chunk_mesh: ChunkMesh) -> Mesh {
+    let linear_colors: Vec<[f32; 4]> = chunk_mesh
+        .colors
+        .into_iter()
+        .map(|[red, green, blue, alpha]| {
+            Color::srgba(red, green, blue, alpha)
+                .to_linear()
+                .to_f32_array()
+        })
+        .collect();
     Mesh::new(
         PrimitiveTopology::TriangleList,
         RenderAssetUsages::RENDER_WORLD,
     )
-    .with_inserted_attribute(
-        Mesh::ATTRIBUTE_POSITION,
-        VertexAttributeValues::Float32x3(chunk_mesh.positions),
-    )
-    .with_inserted_attribute(
-        Mesh::ATTRIBUTE_NORMAL,
-        VertexAttributeValues::Float32x3(chunk_mesh.normals),
-    )
-    .with_inserted_attribute(
-        Mesh::ATTRIBUTE_COLOR,
-        VertexAttributeValues::Float32x4(
-            chunk_mesh
-                .colors
-                .into_iter()
-                .map(|[red, green, blue, alpha]| {
-                    Color::srgba(red, green, blue, alpha)
-                        .to_linear()
-                        .to_f32_array()
-                })
-                .collect(),
-        ),
-    )
+    .with_inserted_attribute(Mesh::ATTRIBUTE_POSITION, chunk_mesh.positions)
+    .with_inserted_attribute(Mesh::ATTRIBUTE_NORMAL, chunk_mesh.normals)
+    .with_inserted_attribute(Mesh::ATTRIBUTE_COLOR, linear_colors)
     .with_inserted_indices(Indices::U32(chunk_mesh.indices))
 }
 
@@ -215,6 +205,7 @@ fn chunks_touched_by(block_position: BlockPosition) -> impl Iterator<Item = Chun
 
 #[cfg(test)]
 mod tests {
+    use bevy::mesh::VertexAttributeValues;
     use mundareu_world::Block;
 
     use super::*;

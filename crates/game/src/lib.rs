@@ -29,10 +29,6 @@ enum GameSystems {
     Hud,
 }
 
-pub fn run() -> AppExit {
-    run_with(RunOptions::default())
-}
-
 pub fn run_with(options: RunOptions) -> AppExit {
     let mut app = App::new();
     app.add_plugins(DefaultPlugins.set(WindowPlugin {

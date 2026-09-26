@@ -1,4 +1,4 @@
-use glam::IVec3;
+use glam::{FloatExt, IVec3};
 
 use crate::block::Block;
 use crate::chunk::{CHUNK_SIZE, Chunk};
@@ -109,14 +109,14 @@ fn plant_tree(world: &mut World, base: BlockPosition) {
 fn value_noise(x: f32, z: f32, seed: u64) -> f32 {
     let cell_x = x.floor();
     let cell_z = z.floor();
-    let fraction_x = smooth(x - cell_x);
-    let fraction_z = smooth(z - cell_z);
+    let fraction_x = smoothstep(x - cell_x);
+    let fraction_z = smoothstep(z - cell_z);
     let corner = |offset_x: i32, offset_z: i32| {
         lattice_value(cell_x as i32 + offset_x, cell_z as i32 + offset_z, seed)
     };
-    let near = lerp(corner(0, 0), corner(1, 0), fraction_x);
-    let far = lerp(corner(0, 1), corner(1, 1), fraction_x);
-    lerp(near, far, fraction_z) * 2.0 - 1.0
+    let near = corner(0, 0).lerp(corner(1, 0), fraction_x);
+    let far = corner(0, 1).lerp(corner(1, 1), fraction_x);
+    near.lerp(far, fraction_z) * 2.0 - 1.0
 }
 
 fn lattice_value(x: i32, z: i32, seed: u64) -> f32 {
@@ -133,12 +133,8 @@ fn hash(x: i32, z: i32, seed: u64) -> u64 {
     state
 }
 
-fn smooth(t: f32) -> f32 {
-    t * t * (3.0 - 2.0 * t)
-}
-
-fn lerp(from: f32, to: f32, t: f32) -> f32 {
-    from + (to - from) * t
+fn smoothstep(fraction: f32) -> f32 {
+    fraction * fraction * (3.0 - 2.0 * fraction)
 }
 
 #[cfg(test)]

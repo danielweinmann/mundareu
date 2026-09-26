@@ -2,7 +2,7 @@ use glam::Vec3;
 use serde::{Deserialize, Serialize};
 
 use crate::block::Block;
-use crate::chunk::Chunk;
+use crate::chunk::{BLOCKS_PER_CHUNK, Chunk};
 use crate::position::ChunkPosition;
 use crate::world::World;
 
@@ -90,7 +90,7 @@ fn run_length_encode(chunk: &Chunk) -> Vec<BlockRun> {
     let mut runs: Vec<BlockRun> = Vec::new();
     for (_, block) in chunk.blocks() {
         match runs.last_mut() {
-            Some(run) if run.block == block && run.length < u16::MAX => run.length += 1,
+            Some(run) if run.block == block => run.length += 1,
             _ => runs.push(BlockRun { length: 1, block }),
         }
     }
@@ -99,18 +99,16 @@ fn run_length_encode(chunk: &Chunk) -> Vec<BlockRun> {
 
 fn run_length_decode(runs: &[BlockRun]) -> Result<Chunk, SaveError> {
     let mut chunk = Chunk::default();
-    let mut positions = Chunk::default()
-        .blocks()
-        .map(|(local_position, _)| local_position)
-        .collect::<Vec<_>>()
-        .into_iter();
+    let mut filled = 0;
     for run in runs {
-        for _ in 0..run.length {
-            let local_position = positions.next().ok_or(SaveError::Corrupt)?;
-            chunk.set(local_position, run.block);
+        let end = filled + usize::from(run.length);
+        if end > BLOCKS_PER_CHUNK {
+            return Err(SaveError::Corrupt);
         }
+        chunk.fill(filled..end, run.block);
+        filled = end;
     }
-    if positions.next().is_some() {
+    if filled < BLOCKS_PER_CHUNK {
         return Err(SaveError::Corrupt);
     }
     Ok(chunk)
@@ -171,6 +169,21 @@ mod tests {
             length: 5,
             block: Block::Stone,
         }];
+        assert_eq!(run_length_decode(&runs).err(), Some(SaveError::Corrupt));
+    }
+
+    #[test]
+    fn a_chunk_whose_runs_overflow_it_is_corrupt() {
+        let runs = [
+            BlockRun {
+                length: BLOCKS_PER_CHUNK as u16,
+                block: Block::Stone,
+            },
+            BlockRun {
+                length: 1,
+                block: Block::Dirt,
+            },
+        ];
         assert_eq!(run_length_decode(&runs).err(), Some(SaveError::Corrupt));
     }
 

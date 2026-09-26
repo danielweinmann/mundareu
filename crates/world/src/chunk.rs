@@ -1,9 +1,11 @@
+use std::ops::Range;
+
 use glam::IVec3;
 
 use crate::block::Block;
 
 pub const CHUNK_SIZE: i32 = 16;
-const BLOCKS_PER_CHUNK: usize = (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize;
+pub(crate) const BLOCKS_PER_CHUNK: usize = (CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE) as usize;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Chunk {
@@ -34,8 +36,8 @@ impl Chunk {
             .map(|(index, block)| (local_position_of(index), *block))
     }
 
-    pub fn is_empty(&self) -> bool {
-        self.blocks.iter().all(|block| *block == Block::Air)
+    pub(crate) fn fill(&mut self, indices: Range<usize>, block: Block) {
+        self.blocks[indices].fill(block);
     }
 }
 
@@ -67,8 +69,7 @@ mod tests {
     #[test]
     fn a_new_chunk_is_all_air() {
         let chunk = Chunk::default();
-        assert!(chunk.is_empty());
-        assert_eq!(chunk.get(IVec3::new(15, 15, 15)), Block::Air);
+        assert!(chunk.blocks().all(|(_, block)| block == Block::Air));
     }
 
     #[test]
@@ -77,7 +78,6 @@ mod tests {
         chunk.set(IVec3::new(3, 7, 11), Block::Stone);
         assert_eq!(chunk.get(IVec3::new(3, 7, 11)), Block::Stone);
         assert_eq!(chunk.get(IVec3::new(11, 7, 3)), Block::Air);
-        assert!(!chunk.is_empty());
     }
 
     #[test]

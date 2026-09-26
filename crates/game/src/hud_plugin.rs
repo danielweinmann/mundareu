@@ -211,12 +211,14 @@ fn follow_joystick(
     touch_state: Res<TouchState>,
     mut indicator: Single<&mut Node, With<JoystickIndicator>>,
 ) {
+    let mut followed = Node::clone(&indicator);
     match touch_state.joystick {
         Some(joystick) => {
-            indicator.display = Display::Flex;
-            indicator.left = px(joystick.anchor.x - JOYSTICK_INDICATOR_SIZE / 2.0);
-            indicator.top = px(joystick.anchor.y - JOYSTICK_INDICATOR_SIZE / 2.0);
+            followed.display = Display::Flex;
+            followed.left = px(joystick.anchor.x - JOYSTICK_INDICATOR_SIZE / 2.0);
+            followed.top = px(joystick.anchor.y - JOYSTICK_INDICATOR_SIZE / 2.0);
         }
-        None => indicator.display = Display::None,
+        None => followed.display = Display::None,
     }
+    indicator.set_if_neq(followed);
 }

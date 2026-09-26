@@ -36,7 +36,7 @@ pub fn raycast(
     }
 
     loop {
-        let axis = smallest_axis(distance_to_next_boundary);
+        let axis = distance_to_next_boundary.min_position();
         let travelled = distance_to_next_boundary[axis];
         if travelled > max_distance {
             return None;
@@ -52,16 +52,6 @@ pub fn raycast(
                 face_normal,
             });
         }
-    }
-}
-
-fn smallest_axis(distances: Vec3) -> usize {
-    if distances.x <= distances.y && distances.x <= distances.z {
-        0
-    } else if distances.y <= distances.z {
-        1
-    } else {
-        2
     }
 }
 
