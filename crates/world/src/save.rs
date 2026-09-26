@@ -188,6 +188,25 @@ mod tests {
     }
 
     #[test]
+    fn the_save_format_is_pinned_byte_for_byte() {
+        let mut world = World::default();
+        world.set_block(BlockPosition::new(0, 0, 0), Block::Stone);
+        world.set_block(BlockPosition::new(1, 0, 0), Block::Stone);
+        world.set_block(BlockPosition::new(2, 1, 0), Block::Grass);
+        let player = PlayerState {
+            position: Vec3::new(0.5, 2.0, -1.5),
+            yaw: 0.5,
+        };
+        assert_eq!(
+            encode(&world, player),
+            [
+                1, 0, 0, 0, 63, 0, 0, 0, 64, 0, 0, 192, 191, 0, 0, 0, 63, 1, 0, 0, 0, 4, 2, 3, 16,
+                0, 1, 1, 237, 31, 0
+            ]
+        );
+    }
+
+    #[test]
     fn the_error_messages_read_as_sentences() {
         assert_eq!(
             SaveError::UnsupportedVersion(3).to_string(),

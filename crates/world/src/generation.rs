@@ -208,6 +208,11 @@ mod tests {
                         "{below_block:?}"
                     );
                     if below_block == Block::Grass {
+                        let mut above_trunk = chunk_position.block_position(local_position);
+                        while world.block_at(above_trunk) == Block::Wood {
+                            above_trunk = above_trunk.offset(IVec3::Y);
+                        }
+                        assert_eq!(world.block_at(above_trunk), Block::Leaves);
                         trunks += 1;
                     }
                 }
