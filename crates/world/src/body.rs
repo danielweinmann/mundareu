@@ -93,7 +93,7 @@ fn sweep_axis(world: &World, mut body: Body, axis: Axis, distance: f32) -> Body 
         return body;
     }
     body.position[axis.index()] += distance;
-    let Some(blocking) = first_overlapping_solid_block(world, &body) else {
+    let Some(blocking) = nearest_overlapping_solid_block(world, &body, axis, distance) else {
         return body;
     };
     let block_min = blocking.min_corner()[axis.index()];
@@ -118,21 +118,28 @@ fn sweep_axis(world: &World, mut body: Body, axis: Axis, distance: f32) -> Body 
     body
 }
 
-fn first_overlapping_solid_block(world: &World, body: &Body) -> Option<BlockPosition> {
+fn nearest_overlapping_solid_block(
+    world: &World,
+    body: &Body,
+    axis: Axis,
+    distance: f32,
+) -> Option<BlockPosition> {
     let (min, max) = body.bounds();
     let first = BlockPosition::containing(min).0;
     let last = BlockPosition::containing(max - Vec3::splat(CONTACT_EPSILON)).0;
-    for x in first.x..=last.x {
-        for y in first.y..=last.y {
-            for z in first.z..=last.z {
-                let block_position = BlockPosition(IVec3::new(x, y, z));
-                if world.is_solid_at(block_position) {
-                    return Some(block_position);
-                }
-            }
-        }
+    let overlapping_solid_blocks = (first.x..=last.x)
+        .flat_map(|x| {
+            (first.y..=last.y).flat_map(move |y| {
+                (first.z..=last.z).map(move |z| BlockPosition(IVec3::new(x, y, z)))
+            })
+        })
+        .filter(|block_position| world.is_solid_at(*block_position));
+    let coordinate_along_axis = |block_position: &BlockPosition| block_position.0[axis.index()];
+    if distance > 0.0 {
+        overlapping_solid_blocks.min_by_key(coordinate_along_axis)
+    } else {
+        overlapping_solid_blocks.max_by_key(coordinate_along_axis)
     }
-    None
 }
 
 #[cfg(test)]
@@ -324,6 +331,30 @@ mod tests {
             body = step_body(&world, body, MovementInput::default(), DELTA_SECONDS);
             assert!(body.position.y + body.height <= 3.0);
         }
+    }
+
+    #[test]
+    fn a_long_fall_in_one_step_lands_on_top_of_thick_ground() {
+        let mut world = World::default();
+        for x in -2..2 {
+            for y in 0..10 {
+                for z in -2..2 {
+                    world.set_block(BlockPosition::new(x, y, z), Block::Stone);
+                }
+            }
+        }
+        let body = step_body(
+            &world,
+            Body::standing_at(Vec3::new(0.5, 10.5, 0.5)),
+            MovementInput::default(),
+            0.25,
+        );
+        assert!(body.grounded);
+        assert!(
+            (body.position.y - (10.0 + CONTACT_EPSILON)).abs() < 1e-4,
+            "feet at {}",
+            body.position.y
+        );
     }
 
     #[test]
