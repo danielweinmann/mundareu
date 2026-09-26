@@ -56,9 +56,10 @@ cargo run -p mundareu -- --screenshot proof.png --exit-after-seconds 4 --log-fra
 
 The gates are `cargo fmt --all --check`,
 `cargo clippy --workspace --all-targets -- -D warnings`,
-`cargo test --workspace`, `cargo build -p mundareu` and
-`cargo build --target aarch64-apple-ios -p mundareu`. Continuous integration
-runs the cargo gates on Ubuntu and the iOS simulator build on macOS.
+`cargo test --workspace`, `cargo build --target aarch64-apple-ios -p mundareu`,
+`pnpm check` and `pnpm tsc`. Continuous integration runs the formatting,
+clippy, tests, Biome (`pnpm check`) and `pnpm tsc` on Ubuntu, and the iOS
+device compile plus the simulator Xcode build on macOS.
 
 ## Running on an iPad
 
@@ -86,8 +87,9 @@ xcodebuild -project apps/ios/Mundareu.xcodeproj -scheme Mundareu \
   -derivedDataPath apps/ios/build CODE_SIGNING_ALLOWED=NO build
 ```
 
-and install the resulting `Mundareu.app` on a booted simulator with
-`xcrun simctl install booted <path>`, then launch it with
+and install the resulting app on a booted simulator with
+`xcrun simctl install booted apps/ios/build/Build/Products/Debug-iphonesimulator/Mundareu.app`,
+then launch it with
 `xcrun simctl launch booted com.danielweinmann.mundareu`.
 
 ## License
