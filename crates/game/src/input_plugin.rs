@@ -1,3 +1,4 @@
+use bevy::input::InputSystems;
 use bevy::input::mouse::AccumulatedMouseMotion;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
@@ -56,7 +57,12 @@ pub fn plugin(app: &mut App) {
     app.init_resource::<PlayerIntent>()
         .init_resource::<TouchState>()
         .init_resource::<RightButtonDrag>()
-        .add_systems(PreUpdate, (read_touch_input, read_desktop_input).chain());
+        .add_systems(
+            PreUpdate,
+            (read_touch_input, read_desktop_input)
+                .chain()
+                .after(InputSystems),
+        );
 }
 
 fn read_touch_input(
